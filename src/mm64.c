@@ -105,19 +105,13 @@ int get_pd_from_pagenum(addr_t pgn, addr_t* pgd, addr_t* p4d, addr_t* pud, addr_
 int pte_set_swap(struct pcb_t *caller, addr_t pgn, int swptyp, addr_t swpoff)
 {
 		addr_t *pte;
-		addr_t pgd		=		0;
-		addr_t p4d		=		0;
-		addr_t pud		=		0;
-		addr_t pmd		=		0;
-		addr_t pt 		=		0;	
+		addr_t pgd = 0;
+		addr_t p4d = 0;
+		addr_t pud = 0;
+		addr_t pmd = 0;
+		addr_t pt  = 0;	
 #ifdef MM64
   		get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-		pte		=		(addr_t *) caller->mm->pgd[pgd];
-		pte		=		(addr_t *) pte[p4d];
-		pte		=		(addr_t *) pte[pud];
-		pte		=		(addr_t *) pte[pmd];
-		pte		=		(addr_t *) pte[pt];
-		pte		=		&(pte[pgn]);
 #else
   		pte = &krnl->mm->pgd[pgn];
 #endif
@@ -141,20 +135,14 @@ int pte_set_fpn(struct pcb_t *caller, addr_t pgn, addr_t fpn)
 //struct krnl_t *krnl = caller->krnl;
 
 		addr_t *pte;
-		addr_t pgd		=		0;
-		addr_t p4d		=		0;
-		addr_t pud		=		0;
-		addr_t pmd		=		0;
-		addr_t pt 		=		0;	
+		addr_t pgd = 0;
+		addr_t p4d = 0;
+		addr_t pud = 0;
+		addr_t pmd = 0;
+		addr_t pt  = 0;	
 	
 #ifdef MM64
   		get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-		pte		=		(addr_t *) caller->mm->pgd[pgd];
-		pte		=		(addr_t *) pte[p4d];
-		pte		=		(addr_t *) pte[pud];
-		pte		=		(addr_t *) pte[pmd];
-		pte		=		(addr_t *) pte[pt];
-		pte		=		&(pte[pgn]);
 #else
   		pte = &krnl->mm->pgd[pgn];
 #endif
@@ -177,11 +165,11 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
 {
 //struct krnl_t *krnl = caller->krnl;
   uint32_t pte = 0;
-  addr_t pgd=0;
-  addr_t p4d=0;
-  addr_t pud=0;
-  addr_t pmd=0;
-  addr_t	pt=0;
+  addr_t pgd = 0;
+  addr_t p4d = 0;
+  addr_t pud = 0;
+  addr_t pmd = 0;
+  addr_t pt  = 0;
 	
   /* TODO Perform multi-level page mapping */
   get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
