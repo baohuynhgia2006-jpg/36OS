@@ -58,7 +58,6 @@ int init_pte(addr_t *pte,
   return 0;
 }
 
-
 /*
  * get_pd_from_pagenum - Parse address to 5 page directory level
  * @pgn   : pagenumer
@@ -71,11 +70,11 @@ int init_pte(addr_t *pte,
 int get_pd_from_address(addr_t addr, addr_t* pgd, addr_t* p4d, addr_t* pud, addr_t* pmd, addr_t* pt)
 {
 	/* Extract page direactories */
-		*pgd = (addr & PAGING64_ADDR_PGD_MASK) >>  PAGING64_ADDR_PGD_LOBIT;
-		*p4d = (addr & PAGING64_ADDR_P4D_MASK) >> PAGING64_ADDR_P4D_LOBIT;
-		*pud = (addr & PAGING64_ADDR_PUD_MASK) >> PAGING64_ADDR_PUD_LOBIT;
-		*pmd = (addr & PAGING64_ADDR_PMD_MASK) >> PAGING64_ADDR_PMD_LOBIT;
-		*pt  = (addr & PAGING64_ADDR_PT_MASK)  >> PAGING64_ADDR_PT_LOBIT;
+	*pgd = (addr & PAGING64_ADDR_PGD_MASK) >>  PAGING64_ADDR_PGD_LOBIT;
+	*p4d = (addr & PAGING64_ADDR_P4D_MASK) >> PAGING64_ADDR_P4D_LOBIT;
+	*pud = (addr & PAGING64_ADDR_PUD_MASK) >> PAGING64_ADDR_PUD_LOBIT;
+	*pmd = (addr & PAGING64_ADDR_PMD_MASK) >> PAGING64_ADDR_PMD_LOBIT;
+	*pt  = (addr & PAGING64_ADDR_PT_MASK)  >> PAGING64_ADDR_PT_LOBIT;
 	/* CORRECT */
 		return 0;
 }
@@ -95,6 +94,22 @@ int get_pd_from_pagenum(addr_t pgn, addr_t* pgd, addr_t* p4d, addr_t* pud, addr_
 		return get_pd_from_address(pgn << PAGING64_ADDR_PT_SHIFT, pgd, p4d, pud, pmd, pt);
 }
 
+addr_t * page_walk(struct pcb_t* caller, addr_t pgd, addr_t p4d, addr_t pud, addr_t pmd, addr_t pt)
+{
+	addr_t * res;
+	addr_t placeholder = caller->mm->pgd[pgd];
+	if (placeholder == 0) return NULL;
+	placeholder = ((addr_t *)placeholder)[p4d];
+	if (placeholder == 0) return NULL;
+	placeholder = ((addr_t *)placeholder)[pud];
+	if (placeholder == 0) return NULL;
+	placeholder = ((addr_t *)placeholder)[pmd];
+	if (placeholder == 0) return NULL;
+	res = &((addr_t *)placeholder)[pt];
+	placeholder = ((addr_t *)placeholder)[pt];
+	if (placeholder == 0) return NULL;
+	return res;
+}
 
 /*
  * pte_set_swap - Set PTE entry for swapped page
@@ -104,25 +119,27 @@ int get_pd_from_pagenum(addr_t pgn, addr_t* pgd, addr_t* p4d, addr_t* pud, addr_
  */
 int pte_set_swap(struct pcb_t *caller, addr_t pgn, int swptyp, addr_t swpoff)
 {
-		addr_t *pte;
-		addr_t pgd = 0;
-		addr_t p4d = 0;
-		addr_t pud = 0;
-		addr_t pmd = 0;
-		addr_t pt  = 0;	
+	addr_t *pte;
+	addr_t pgd = 0;
+	addr_t p4d = 0;
+	addr_t pud = 0;
+	addr_t pmd = 0;
+	addr_t pt  = 0;	
 #ifdef MM64
-  		get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+  	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+	pte = page_walk(caller, pgd, p4d, pud, pmd, pt);
+	if (pte == NULL) return -1;
 #else
-  		pte = &krnl->mm->pgd[pgn];
+  	pte = &krnl->mm->pgd[pgn];
 #endif
 	
-		SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
- 		SETBIT(*pte, PAGING_PTE_SWAPPED_MASK);
+	SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
+ 	SETBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
-  		SETVAL(*pte, swptyp, PAGING_PTE_SWPTYP_MASK, PAGING_PTE_SWPTYP_LOBIT);
-  		SETVAL(*pte, swpoff, PAGING_PTE_SWPOFF_MASK, PAGING_PTE_SWPOFF_LOBIT);
+  	SETVAL(*pte, swptyp, PAGING_PTE_SWPTYP_MASK, PAGING_PTE_SWPTYP_LOBIT);
+  	SETVAL(*pte, swpoff, PAGING_PTE_SWPOFF_MASK, PAGING_PTE_SWPOFF_LOBIT);
 
-  		return 0;
+  	return 0;
 }
 
 /*
@@ -134,25 +151,27 @@ int pte_set_fpn(struct pcb_t *caller, addr_t pgn, addr_t fpn)
 {
 //struct krnl_t *krnl = caller->krnl;
 
-		addr_t *pte;
-		addr_t pgd = 0;
-		addr_t p4d = 0;
-		addr_t pud = 0;
-		addr_t pmd = 0;
-		addr_t pt  = 0;	
+	addr_t *pte;
+	addr_t pgd = 0;
+	addr_t p4d = 0;
+	addr_t pud = 0;
+	addr_t pmd = 0;
+	addr_t pt  = 0;	
 	
 #ifdef MM64
-  		get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+  	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+	pte = page_walk(caller, pgd, p4d, pud, pmd, pt);
+	if(pte == NULL) return -1;
 #else
-  		pte = &krnl->mm->pgd[pgn];
+  	pte = &krnl->mm->pgd[pgn];
 #endif
 
-  		SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
-  		CLRBIT(*pte, PAGING_PTE_SWAPPED_MASK);
+  	SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
+  	CLRBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
-  		SETVAL(*pte, fpn, PAGING_PTE_FPN_MASK, PAGING_PTE_FPN_LOBIT);
+  	SETVAL(*pte, fpn, PAGING_PTE_FPN_MASK, PAGING_PTE_FPN_LOBIT);
 
-  		return 0;
+  	return 0;
 }
 
 
@@ -170,12 +189,9 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
   addr_t pud = 0;
   addr_t pmd = 0;
   addr_t pt  = 0;
-	
-  /* TODO Perform multi-level page mapping */
+
   get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-  //... krnl->mm->pgd
-  //... krnl->mm->pt
-  //pte = &krnl->mm->pt;	
+  pte = *page_walk(caller, pgd, p4d, pud, pmd, pt);	
 	
   return pte;
 }
@@ -185,7 +201,7 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
  * @pgn    : page number
  * @ret    : page table entry
  **/
-int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val)
+int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val) // DEPRECATED 
 {
 	struct krnl_t *krnl = caller->krnl;
 	krnl->mm->pgd[pgn]=pte_val;
