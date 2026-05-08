@@ -115,8 +115,9 @@ struct pcb_t
 	// and this vale overwrites the default priority when it existed
 	uint32_t prio;
 #endif
-	struct krnl_t *krnl;	
-	struct page_table_t *page_table; // Page table
+	// struct mm_struct *mm; - INTENDED TO BE ADDED (UNDER MM_PAGING CONFIG)
+	struct krnl_t *krnl;	 // INTENDED FOR DIS-USED
+	struct page_table_t *page_table; // Page table (OBSELETE)
 	uint32_t bp;			 // Break pointer
 };
 
@@ -129,7 +130,7 @@ struct krnl_t
 	struct queue_t *mlq_ready_queue;
 #endif
 #ifdef MM_PAGING
-	struct mm_struct *mm;
+	struct mm_struct *mm; // INTENDED FOR DIS-USED
 	struct memphy_struct *mram;
 	struct memphy_struct **mswp;
 	struct memphy_struct *active_mswp;

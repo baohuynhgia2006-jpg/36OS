@@ -244,7 +244,7 @@ addr_t vmap_page_range(struct pcb_t *caller,           // process call
 }
 
 /*
- * alloc_pages_range - allocate req_pgnum of frame in ram
+ * alloc_pages_range - allocate req_pgnum of frame in ram [DEFUNCT]
  * @caller    : caller
  * @req_pgnum : request page num
  * @frm_lst   : frame list
