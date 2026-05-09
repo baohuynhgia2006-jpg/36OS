@@ -222,6 +222,13 @@ int vmap_pgd_memset(struct pcb_t *caller,           // process call
 
   /* TODO memset the page table with given pattern
    */
+  addr_t pgd = 0;    // pgd index
+  addr_t p4d = 0;    // p4d index
+  addr_t pud = 0;    // pud index
+  addr_t pmd = 0;    // pmd index
+  addr_t pt  = 0;    // pt index
+
+  get_pd_from_address(addr, &pgd, &p4d, &pud, &pmd, &pt);
 
   return 0;
 }
