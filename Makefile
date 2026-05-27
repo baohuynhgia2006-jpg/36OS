@@ -1,4 +1,3 @@
-
 INC = -Iinclude
 LIB = -lpthread
 
