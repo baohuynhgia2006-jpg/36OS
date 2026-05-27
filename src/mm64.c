@@ -187,17 +187,17 @@ int pte_set_fpn(struct pcb_t *caller, addr_t pgn, addr_t fpn)
 uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
 {
 //struct krnl_t *krnl = caller->krnl;
-  uint32_t pte = 0;
-  addr_t pgd = 0;
-  addr_t p4d = 0;
-  addr_t pud = 0;
-  addr_t pmd = 0;
-  addr_t pt  = 0;
+	uint32_t pte = 0;
+	addr_t pgd = 0;
+	addr_t p4d = 0;
+	addr_t pud = 0;
+	addr_t pmd = 0;
+	addr_t pt  = 0;
 
-  get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-  pte = *get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);	
-	
-  return pte;
+	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+	pte = *get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);
+
+	return (uint32_t) pte;
 }
 
 /* Set PTE page table entry
@@ -207,7 +207,7 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
  **/
 int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val) 
 {
-	uint32_t * pte;
+	addr_t * pte;
 	addr_t pgd = 0;
 	addr_t p4d = 0;
 	addr_t pud = 0;
@@ -215,7 +215,9 @@ int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val)
 	addr_t pt  = 0;
 
 	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-
+	pte = get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);
+	if(pte == NULL) return -1;
+	*pte = pte_val;
 	
 	return 0;
 }
@@ -228,20 +230,16 @@ int vmap_pgd_memset(struct pcb_t *caller,           // process call
                     addr_t addr,                       // start address which is aligned to pagesz
                     int pgnum)                      // num of mapping page
 {
-  //int pgit = 0;
-  //uint64_t pattern = 0xdeadbeef;
+	uint32_t pattern = 0x00000000;
 
   /* TODO memset the page table with given pattern
    */
-  addr_t pgd = 0;    // pgd index
-  addr_t p4d = 0;    // p4d index
-  addr_t pud = 0;    // pud index
-  addr_t pmd = 0;    // pmd index
-  addr_t pt  = 0;    // pt index
+	while(pgnum--){
+		if(pte_set_entry(caller, addr, pattern) == -1) return -1;
+		addr = addr + PAGING64_PAGESZ;	
+	}
 
-  get_pd_from_address(addr, &pgd, &p4d, &pud, &pmd, &pt);
-
-  return 0;
+	return 0;
 }
 
 /*
