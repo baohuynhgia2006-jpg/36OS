@@ -98,14 +98,18 @@ addr_t * get_actual_addr_pt(struct pcb_t* caller, addr_t pgd, addr_t p4d, addr_t
 {
 	addr_t * curr_addr; // Initialize the current address
 	curr_addr = caller->mm->pgd; // We set the current address to base address of the global directory
-	if(curr_addr == NULL) return NULL; // We check if it is NULL or not intialized yet
-	curr_addr = (addr_t *) curr_addr[pgd]; // We set the current address to the base address of the 4-level page table
-	if(curr_addr == NULL) return NULL; 
-	curr_addr = (addr_t *) curr_addr[p4d]; // We set the current address to the base address of the upper directory page table
+	if(curr_addr == NULL) return NULL; // We check if it is NULL or not intialized 
+	curr_addr = curr_addr + pgd;
+	curr_addr = (addr_t *) *curr_addr; // We set the current address to the base address of the 4-level page table
 	if(curr_addr == NULL) return NULL;
-	curr_addr = (addr_t *) curr_addr[pud]; // We set the current address to the base address of the middle directory page table
+       	curr_addr = curr_addr + p4d;	
+	curr_addr = (addr_t *) *curr_addr; // We set the current address to the base address of the upper directory page table
 	if(curr_addr == NULL) return NULL;
-	curr_addr = (addr_t *) curr_addr[pmd]; // We set the current address to the base address of the page table
+	curr_addr = curr_addr + pud;
+	curr_addr = (addr_t *) *curr_addr; // We set the current address to the base address of the middle directory page table
+	if(curr_addr == NULL) return NULL;
+	curr_addr = curr_addr + pmd;
+	curr_addr = (addr_t *) *curr_addr; // We set the current address to the base address of the page table
 	if(curr_addr == NULL) return NULL;
 	curr_addr = curr_addr + pt; // We compute the actual physical address of the page table entry formed from pgd, p4d, pud, pmd and pt
 	return curr_addr;
