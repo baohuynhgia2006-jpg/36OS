@@ -94,21 +94,21 @@ int get_pd_from_pagenum(addr_t pgn, addr_t* pgd, addr_t* p4d, addr_t* pud, addr_
 		return get_pd_from_address(pgn << PAGING64_ADDR_PT_SHIFT, pgd, p4d, pud, pmd, pt);
 }
 
-addr_t * page_walk(struct pcb_t* caller, addr_t pgd, addr_t p4d, addr_t pud, addr_t pmd, addr_t pt)
+addr_t * get_actual_addr_pt(struct pcb_t* caller, addr_t pgd, addr_t p4d, addr_t pud, addr_t pmd, addr_t pt)
 {
-	addr_t * res;
-	addr_t placeholder = caller->mm->pgd[pgd];
-	if (placeholder == 0) return NULL;
-	placeholder = ((addr_t *)placeholder)[p4d];
-	if (placeholder == 0) return NULL;
-	placeholder = ((addr_t *)placeholder)[pud];
-	if (placeholder == 0) return NULL;
-	placeholder = ((addr_t *)placeholder)[pmd];
-	if (placeholder == 0) return NULL;
-	res = &((addr_t *)placeholder)[pt];
-	placeholder = ((addr_t *)placeholder)[pt];
-	if (placeholder == 0) return NULL;
-	return res;
+	addr_t * curr_addr; // Initialize the current address
+	curr_addr = caller->mm->pgd; // We set the current address to base address of the global directory
+	if(curr_addr == NULL) return NULL; // We check if it is NULL or not intialized yet
+	curr_addr = (addr_t *) curr_addr[pgd]; // We set the current address to the base address of the 4-level page table
+	if(curr_addr == NULL) return NULL; 
+	curr_addr = (addr_t *) curr_addr[p4d]; // We set the current address to the base address of the upper directory page table
+	if(curr_addr == NULL) return NULL;
+	curr_addr = (addr_t *) curr_addr[pud]; // We set the current address to the base address of the middle directory page table
+	if(curr_addr == NULL) return NULL;
+	curr_addr = (addr_t *) curr_addr[pmd]; // We set the current address to the base address of the page table
+	if(curr_addr == NULL) return NULL;
+	curr_addr = curr_addr + pt; // We compute the actual physical address of the page table entry formed from pgd, p4d, pud, pmd and pt
+	return curr_addr;
 }
 
 /*
@@ -127,7 +127,7 @@ int pte_set_swap(struct pcb_t *caller, addr_t pgn, int swptyp, addr_t swpoff)
 	addr_t pt  = 0;	
 #ifdef MM64
   	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-	pte = page_walk(caller, pgd, p4d, pud, pmd, pt);
+	pte = get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);
 	if (pte == NULL) return -1;
 #else
   	pte = &krnl->mm->pgd[pgn];
@@ -160,7 +160,7 @@ int pte_set_fpn(struct pcb_t *caller, addr_t pgn, addr_t fpn)
 	
 #ifdef MM64
   	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-	pte = page_walk(caller, pgd, p4d, pud, pmd, pt);
+	pte = get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);
 	if(pte == NULL) return -1;
 #else
   	pte = &krnl->mm->pgd[pgn];
@@ -191,7 +191,7 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
   addr_t pt  = 0;
 
   get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
-  pte = *page_walk(caller, pgd, p4d, pud, pmd, pt);	
+  pte = *get_actual_addr_pt(caller, pgd, p4d, pud, pmd, pt);	
 	
   return pte;
 }
@@ -201,10 +201,17 @@ uint32_t pte_get_entry(struct pcb_t *caller, addr_t pgn)
  * @pgn    : page number
  * @ret    : page table entry
  **/
-int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val) // DEPRECATED 
+int pte_set_entry(struct pcb_t *caller, addr_t pgn, uint32_t pte_val) 
 {
-	struct krnl_t *krnl = caller->krnl;
-	krnl->mm->pgd[pgn]=pte_val;
+	uint32_t * pte;
+	addr_t pgd = 0;
+	addr_t p4d = 0;
+	addr_t pud = 0;
+	addr_t pmd = 0;
+	addr_t pt  = 0;
+
+	get_pd_from_pagenum(pgn, &pgd, &p4d, &pud, &pmd, &pt);
+
 	
 	return 0;
 }
