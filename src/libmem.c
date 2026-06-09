@@ -193,7 +193,7 @@ int liballoc(struct pcb_t *proc, addr_t size, uint32_t reg_index)
 		return -1;
 	}
 #ifdef IODUMP
-	/* TODO dump IO content (if needed) */
+	printf("[LIBALLOC] PID %d: alloc [" FORMAT_ADDR "] [%u]\n", proc->pid, size, reg_index);
 #ifdef PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif
@@ -218,7 +218,7 @@ int libfree(struct pcb_t *proc, uint32_t reg_index)
 	}
 	printf("%s:%d\n", __func__, __LINE__);
 #ifdef IODUMP
-	/* TODO dump IO content (if needed) */
+	printf("[LIBFREE] PID %d: free [%u]\n", proc->pid, reg_index);
 #ifdef PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif
@@ -429,7 +429,7 @@ int libread(
 
 	*destination = data;
 #ifdef IODUMP
-	/* TODO dump IO content (if needed) */
+	printf("[LIBREAD] PID %d: read [%u] [" FORMAT_ADDR "] [%u]\n", proc->pid, source, offset, *destination);
 #ifdef PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif
@@ -484,7 +484,7 @@ int libwrite(
 		return -1;
 	}
 #ifdef IODUMP
-	/* TODO dump IO content (if needed) */
+	printf("[LIBWRITE] PID %d: write [%u] [%u] [" FORMAT_ADDR "]\n", proc->pid, data, destination, offset);
 #ifdef PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif
