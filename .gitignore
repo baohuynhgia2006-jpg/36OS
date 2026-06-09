@@ -1,0 +1,5 @@
+obj/
+os.exe
+*.o
+*.out
+src/*.lst
