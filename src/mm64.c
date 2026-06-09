@@ -305,6 +305,7 @@ addr_t vmap_page_range(struct pcb_t *caller,		   // process call
 	{
 		pte_set_fpn(caller, pgn + i, curr_frame->fpn);
 		curr_frame = curr_frame->fp_next;
+		enlist_pgn_node(&caller->krnl->mm->fifo_pgn, pgn + i);
 	}
 
 	return 0;
@@ -449,7 +450,6 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 		vma0->vm_end = KERNEL_SPACE_START;
 		vma0->sbrk = vma0->vm_start;
 	}
-	
 	else 
 	{
 		vma0->vm_id = 0;
@@ -457,6 +457,8 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 		vma0->vm_end = vma0->vm_start;
 		vma0->sbrk = vma0->vm_start;
 	}
+
+	vma0->vm_freerg_list = NULL;
 
 	struct vm_rg_struct *first_rg = init_vm_rg(vma0->vm_start, vma0->vm_end);
 	enlist_vm_rg_node(&vma0->vm_freerg_list, first_rg);
