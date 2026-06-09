@@ -577,11 +577,19 @@ addr_t __kmalloc(struct pcb_t *caller, int vmaid, int rgid, addr_t size, addr_t 
 	/* Update krnl_pgd for OS kernel-level page directory management */
 	if (krnl->krnl_pgd != NULL)
 	{
+#ifdef MM64
+		int start_pgd = PAGING64_ADDR_PGD(old_sbrk);
+		int end_pgd   = PAGING64_ADDR_PGD(old_sbrk + size - 1);
+		int i;
+		for (i = start_pgd; i <= end_pgd; i++)
+			krnl->krnl_pgd[i] = krnl->mm->pgd[i];
+#else
 		int start_pgn = old_sbrk / PAGING64_PAGESZ;
 		int end_pgn   = (old_sbrk + size - 1) / PAGING64_PAGESZ;
 		int i;
 		for (i = start_pgn; i <= end_pgn; i++)
 			krnl->krnl_pgd[i] = krnl->mm->pgd[i];
+#endif
 	}
 
 	return 0;
