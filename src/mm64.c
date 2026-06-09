@@ -442,10 +442,21 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 
 	mm->pgd = calloc(512, sizeof(addr_t));
 
-	vma0->vm_id = 0;
-	vma0->vm_start = 0;
-	vma0->vm_end = vma0->vm_start;
-	vma0->sbrk = vma0->vm_start;
+	if(caller == NULL)
+	{
+		vma0->vm_id = 0;
+		vma0->vm_start = KERNEL_SPACE_START;
+		vma0->vm_end = KERNEL_SPACE_START;
+		vma0->sbrk = vma0->vm_start;
+	}
+	
+	else 
+	{
+		vma0->vm_id = 0;
+		vma0->vm_start = 0;
+		vma0->vm_end = vma0->vm_start;
+		vma0->sbrk = vma0->vm_start;
+	}
 
 	struct vm_rg_struct *first_rg = init_vm_rg(vma0->vm_start, vma0->vm_end);
 	enlist_vm_rg_node(&vma0->vm_freerg_list, first_rg);
