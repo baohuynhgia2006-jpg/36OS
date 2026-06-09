@@ -119,18 +119,21 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, addr_t inc_sz)
    * --------------------------------------------------------------- */
   if (old_sbrk + inc_sz <= cur_vma->vm_end)
   {
-    cur_vma->sbrk += inc_sz;
+    cur_vma->sbrk = old_sbrk + inc_sz;
 
-    struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
-    if (newrg == NULL)
-      return -1;
+    if (cur_vma->sbrk < cur_vma->vm_end)
+    {
+      struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
+      if (newrg == NULL)
+        return -1;
 
-    newrg->rg_start = old_sbrk;
-    newrg->rg_end   = cur_vma->sbrk;   /* old_sbrk + inc_sz */
-    newrg->vmaid    = vmaid;
-    newrg->rg_next  = NULL;
+      newrg->rg_start = cur_vma->sbrk;
+      newrg->rg_end   = cur_vma->vm_end;
+      newrg->vmaid    = vmaid;
+      newrg->rg_next  = NULL;
 
-    enlist_vm_rg_node(&cur_vma->vm_freerg_list, newrg);
+      enlist_vm_rg_node(&cur_vma->vm_freerg_list, newrg);
+    }
     return 0;
   }
 
@@ -148,7 +151,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, addr_t inc_sz)
   if (aligned == 0)
     return -1;
 
-  addr_t new_end = old_sbrk + aligned;   /* sbrk advances by aligned amount */
+  addr_t new_end = old_sbrk + aligned;   /* underlying VMA size grows by aligned amount */
 
   /* Reject the expansion if it would overlap a neighbour VMA */
   if (validate_overlap_vm_area(caller, vmaid, cur_vma->vm_start, new_end) < 0)
@@ -156,19 +159,29 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, addr_t inc_sz)
 
   /* Commit the expansion */
   cur_vma->vm_end = new_end;
-  cur_vma->sbrk   = inc_sz;
+  cur_vma->sbrk   = new_end;
 
-  /* Register the entire new range as a free region */
-  struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
-  if (newrg == NULL)
-    return -1;
+  struct vm_rg_struct *new_rg = malloc(sizeof(struct vm_rg_struct));
 
-  newrg->rg_start = old_sbrk;
-  newrg->rg_end   = cur_vma->sbrk;   /* old_sbrk + aligned */
-  newrg->vmaid    = vmaid;
-  newrg->rg_next  = NULL;
+  vm_map_ram(caller, cur_vma->vm_start, cur_vma->vm_end, old_sbrk, 3, new_rg);
 
-  enlist_vm_rg_node(&cur_vma->vm_freerg_list, newrg);
+  new_rg->vmaid = 0;
+  new_rg->rg_next = NULL;
+
+  // if (cur_vma->sbrk < new_end)
+  // {
+  //   struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
+  //   if (newrg == NULL)
+  //     return -1;
+
+  //   newrg->rg_start = cur_vma->sbrk;
+  //   newrg->rg_end   = new_end;
+  //   newrg->vmaid    = vmaid;
+  //   newrg->rg_next  = NULL;
+
+  //   enlist_vm_rg_node(&cur_vma->vm_freerg_list, newrg);
+  // }
+
   return 0;
 }
 
